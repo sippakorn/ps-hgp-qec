@@ -67,7 +67,7 @@ if __name__ == '__main__':
     values = np.row_stack(values, dtype=np.float64)
     stds = np.row_stack(stds, dtype=np.float64)
     
-    with h5py.File("exploration.hdf5", "a") as f: 
+    with h5py.File("exploration_s.hdf5", "a") as f: 
         grp = f.require_group(codes[C])
         grp.attrs['MC_budget'] = MC_budget
         grp.attrs['p'] = p

@@ -1,0 +1,18 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build pym4ri",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "g++ -I../m4ri -I$(python -c \"import numpy; print(numpy.get_include())\") $(python3-config --cflags --ldflags) -L../m4ri/.libs -Wl,-rpath,../m4ri/.libs -o build/pym4ri.o src/pym4ri.cpp -lm4ri"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "configurations": [
+    {
+      "name": "linux-gcc-x64",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/home/sippakorn/.pyenv/versions/3.10.16/include/python3.10",
+        "/home/sippakorn/.pyenv/versions/3.10.16/lib/python3.10/site-packages/numpy/_core/include",
+        "${workspaceFolder}/m4ri"
+      ],
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "${default}",
+      "cppStandard": "c++20",
+      "intelliSenseMode": "linux-gcc-x64",
+      "compilerArgs": [
+        ""
+      ]
+    }
+  ],
+  "version": 4
+}

@@ -1,5 +1,4 @@
 {
-  "version": "0.2.0",
   "configurations": [
     {
       "name": "C/C++ Runner: Debug Session",
@@ -8,8 +7,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/sippakorn/researchspace/ps-hgp-qec/cpp/src",
-      "program": "/home/sippakorn/researchspace/ps-hgp-qec/cpp/src/build/Debug/outDebug",
+      "cwd": "/home/sippakorn/researchspace/ps-hgp-qec-fork/cpp/src",
+      "program": "/home/sippakorn/researchspace/ps-hgp-qec-fork/cpp/src/pym4ri.cpp",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

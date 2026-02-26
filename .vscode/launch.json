@@ -1,0 +1,44 @@
+{
+  "configurations": [
+    {
+      "name": "Debug (gdb): ./build/pym4ri",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/cpp/build/build/pym4ri_test",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/cpp",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "preLaunchTask": "CMake: build",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [],
+      "stopAtEntry": false,
+      "externalConsole": false,
+      "cwd": "${workspaceFolder}/cpp/src",
+      "program": "${workspaceFolder}/cpp/src/build/Debug/outDebug",
+      "MIMode": "gdb",
+      "miDebuggerPath": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}
