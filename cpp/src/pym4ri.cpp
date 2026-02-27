@@ -24,15 +24,6 @@ inline void safe_mzd_print(const mzd_t *M)
         printf("\n");
 }
 
-void behold(mzd_t *M, std::string C)
-{
-    const char *c = C.c_str();
-    printf("Is %s NULL? <<%d>>\n", c, M == NULL);
-    printf("Behold %s (%d x %d): \n", c, M->nrows, M->ncols);
-    safe_mzd_print(M);
-    printf("--------------------\n");
-}
-
 /**
  * @brief Safe versions of some M4RI utilities.
  *
@@ -331,7 +322,6 @@ inline void MC_erasure_plog_rank(int num_trials, std::vector<double> &p_vals, mz
 inline void MC_erasure_plog_rank_only_X(int num_trials, std::vector<double> &p_vals, mzd_t *Hx,
                                         mzp_t *select_erased_cols, PyArrayObject *means, PyArrayObject *stds, PyArrayObject *rank_stats)
 {
-    std::cout << "Running rank-based Monte Carlo simulation (only X)...\n";
     // Construct HxT and HzT
     mzd_t *HxT = safe_mzd_transpose(NULL, Hx);
 
@@ -345,8 +335,6 @@ inline void MC_erasure_plog_rank_only_X(int num_trials, std::vector<double> &p_v
     rci_t rank_Hx = rank(Hx);
 
     // Loop over all p_values and do MC simulation
-    std::cout << "Looping over p values and doing MC simulation...\n";
-    std::cout << "p values: " << p_vals.size() << std::endl;
     for (std::vector<double>::size_type idx = 0; idx < p_vals.size(); idx++)
     {
         double p = p_vals[idx];
@@ -426,32 +414,21 @@ inline void MC_erasure_plog_eta_gamma(int num_trials, std::vector<double> &p_val
 inline void MC_erasure_plog_eta_gamma_only_X(int num_trials, std::vector<double> &p_vals,
                                              mzd_t *Hx, mzd_t *Hz, mzp_t *select_erased_cols, PyArrayObject *means, PyArrayObject *stds)
 {
-    std::cout << "Running eta-gamma Monte Carlo simulation (only X)...\n";
     // Preallocate space to hold the submatrices or copies of Hz
-    std::cout << "Hx->nrows" << Hx->nrows << ", Hx->ncols" << Hx->ncols << "\n";
     mzd_t *canvas = mzd_init(Hx->nrows, Hx->ncols);
-    std::cout << "Precomputing eta(Hz)...\n";
 
     // Precompute eta(Hx)
-    behold(Hx, "Hx before mzd_copy");
     mzd_copy(canvas, Hx);
-    std::cout << "mzd_copy(canvas, Hx)...\n";
     mzd_t *eta_Hx = gen2chk(canvas);
-    std::cout << "gen2chk(canvas)...\n";
     mzd_t *eta_canvas = mzd_init(eta_Hx->nrows, eta_Hx->ncols);
-    std::cout << "mzd_init(eta_Hx->nrows, eta_Hx->ncols)...\n";
 
     // Loop over all p_values and do MC simulation
-    std::cout << "Looping over p values and doing MC simulation...\n";
-    std::cout << "p values: " << p_vals.size() << std::endl;
     for (std::vector<double>::size_type idx = 0; idx < p_vals.size(); idx++)
     {
-        std::cout << "Simulating for p = " << p_vals[idx] << "...\n";
         double p = p_vals[idx];
         int failures = 0;
         for (int t = 0; t < num_trials; t++)
         {
-            std::cout << "Trial " << t + 1 << "/" << num_trials << "\n";
             // Sample erasure
             int e_weight = sample_erasure(p, select_erased_cols);
 
@@ -701,7 +678,6 @@ static PyObject *gf2_linsolve(PyObject *Py_UNUSED(self), PyObject *args)
 static PyObject *MC_erasure_plog(PyObject *Py_UNUSED(self), PyObject *args)
 {
     // Parse all arguments to C/C++ data structures
-    std::cout << "Parsing arguments..." << std::endl;
     std::pair<int, int> shape;
     std::vector<std::pair<int, int>> edges;
     int num_trials;
@@ -831,48 +807,48 @@ void test_rank(mzd_t *H)
     printf("rank(H) = %d\n", rank(H));
 }
 
-static void print_mzp(const mzp_t* P, const char* name) {
-  std::cout << name << " (length=" << P->length << ") = [";
-  for (rci_t i = 0; i < P->length; ++i) {
-    std::cout << (unsigned)P->values[i] << (i + 1 < P->length ? ", " : "");
-  }
-  std::cout << "]\n";
-}
+// static void print_mzp(const mzp_t* P, const char* name) {
+//   std::cout << name << " (length=" << P->length << ") = [";
+//   for (rci_t i = 0; i < P->length; ++i) {
+//     std::cout << (unsigned)P->values[i] << (i + 1 < P->length ? ", " : "");
+//   }
+//   std::cout << "]\n";
+// }
 
 int main()
 {
-    const rci_t m = 5, n = 5;
+    // const rci_t m = 5, n = 5;
 
-    rci_t example[m][n] = {
-        {1, 0, 0, 0, 0},
-        {0, 1, 0, 0, 0},
-        {0, 0, 1, 0, 0},
-        {0, 0, 0, 1, 0},
-        {0, 0, 0, 0, 1},
-    };
+    // rci_t example[m][n] = {
+    //     {1, 0, 0, 0, 0},
+    //     {0, 1, 0, 0, 0},
+    //     {0, 0, 1, 0, 0},
+    //     {0, 0, 0, 1, 0},
+    //     {0, 0, 0, 0, 1},
+    // };
 
-    rci_t num_checks = m * n, num_qubits = m * m + n * n;
+    // rci_t num_checks = m * n, num_qubits = m * m + n * n;
 
-    mzp_t *select_erased_cols = mzp_init(num_qubits);
+    // mzp_t *select_erased_cols = mzp_init(num_qubits);
 
-    print_mzp(select_erased_cols, "select_erased_cols");
+    // print_mzp(select_erased_cols, "select_erased_cols");
 
-    int r = sample_erasure((double)9/32, select_erased_cols);
+    // int r = sample_erasure((double)9/32, select_erased_cols);
 
-    print_mzp(select_erased_cols, "select_erased_cols");
+    // print_mzp(select_erased_cols, "select_erased_cols");
 
-    mzp_free(select_erased_cols);
+    // mzp_free(select_erased_cols);
 
-    mzd_t *H = mzd_init(m, n);
-    for (int i = 0; i < m; i++)
-        for (int j = 0; j < n; j++)
-            mzd_write_bit(H, i, j, example[i][j]);
+    // mzd_t *H = mzd_init(m, n);
+    // for (int i = 0; i < m; i++)
+    //     for (int j = 0; j < n; j++)
+    //         mzd_write_bit(H, i, j, example[i][j]);
 
-    test_chk2gen(H);
-    test_gen2chk(H);
-    test_rank(H);
+    // test_chk2gen(H);
+    // test_gen2chk(H);
+    // test_rank(H);
 
-    mzd_free(H);
+    // mzd_free(H);
 
     return 0;
 }
