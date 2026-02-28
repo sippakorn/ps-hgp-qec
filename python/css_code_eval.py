@@ -45,7 +45,7 @@ def MC_erasure_plog(num_trials: int, state: nx.MultiGraph, p_vals: list[float],
     v = [n for n, b in state.nodes(data='bipartite') if b == 1]
     shape = (len(c), len(v))
     edgelist = list(nx.Graph(state).edges(data=False))
-    return m4ri.MC_erasure_plog(shape, edgelist, num_trials, p_vals, rank_method, True)
+    return m4ri.MC_erasure_plog(shape, edgelist, num_trials, p_vals, rank_method, only_X)
 
 def HGP(H1: sp.csr_array, H2: sp.csr_array=None):
     # Convention: H1 is the vertical axis, H2 is the horizontal axis

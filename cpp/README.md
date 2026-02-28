@@ -16,3 +16,7 @@ ps-hgp-qec/
 ```
 
 It also works if you just copy all the header files and the .libs directories.
+
+CmakeLists.txt located unders /cpp
+
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
