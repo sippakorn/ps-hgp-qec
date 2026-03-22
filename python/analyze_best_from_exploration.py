@@ -5,8 +5,9 @@ import argparse
 import numpy as np
 
 grpname = codes
-p_vals = np.linspace(0.1, 0.5, 15)
-MC_budget = [int(5e5), int(1e5), int(1e5), int(5e4)]
+p_vals = np.linspace(0.1, 0.5, 3)
+#p_vals = [15]
+MC_budget = [int(1e5), int(1e5), int(1e5), int(5e4)]
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -19,16 +20,25 @@ if __name__ == '__main__':
     fn_data = {}
 
     with h5py.File('exploration.hdf5', 'r') as f:
-        theta_edgelist, _ = min(((s, v) for s, v in zip(f[grpname[C]]['states'], f[grpname[C]]['values'])), key=lambda x: x[1])
+        theta_edgelist, second_min_val = sorted(
+            zip(f[grpname[C]]["states"], f[grpname[C]]["values"]),
+            key=lambda sv: sv[1],
+        )[1]
+        print(f"Second best value for {grpname[C]}: {second_min_val}")
         theta = from_edgelist(theta_edgelist)
+        print(f"Second best state for {grpname[C]}: {theta}")
 
     results = MC_erasure_plog(num_trials=MC_budget[C], 
                               state=theta, 
                               p_vals=p_vals)
+    print(f"MC mean for {grpname[C]}: {results['mean']}")
+    print(f"MC std for {grpname[C]}: {results['std']}")
+    print(f"MC x_his_erased_cols for {grpname[C]}: {results['x_his_erased_cols']}")
+    print(f"MC z_his_erased_cols for {grpname[C]}: {results['z_his_erased_cols']}")
 
-    with h5py.File("best_from_exploration.hdf5", "a") as f: 
-        grp = f.require_group(grpname[C])
-        grp.create_dataset("theta", data=theta)
-        grp.create_dataset("mean", data=results['mean'])
-        grp.create_dataset("std", data=results['std'])
+    # with h5py.File("best_from_exploration.hdf5", "a") as f: 
+    #     grp = f.require_group(grpname[C])
+    #     grp.create_dataset("theta", data=theta)
+    #     grp.create_dataset("mean", data=results['mean'])
+    #     grp.create_dataset("std", data=results['std'])
     
