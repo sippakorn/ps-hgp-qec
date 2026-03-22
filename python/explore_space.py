@@ -14,6 +14,7 @@ from experiments_settings import codes, path_to_initial_codes, textfiles
 from experiments_settings import MC_budget, noise_levels
 
 exploration_params = [(24, 120), (15, 70), (12, 40), (8, 30)]
+# exploration_params = [(1, 1), (15, 70), (12, 40), (8, 30)]
 # exploration_params = [(24, 2), (15, 70), (12, 40), (8, 30)]
 
 
@@ -34,8 +35,8 @@ if __name__ == '__main__':
     # print(f"{C = }, {N = }, {L = }, {p = }")
     
     # ------------------------------------------------------------------------------------
-    states, values, stds,x_hists, z_hists = [], [], [], [], []
-    cost_fn = lambda s: MC_erasure_plog(MC_budget, s, [p])
+    states, values, stds, record_type = [], [], [], []
+    cost_fn = lambda s: MC_erasure_plog(MC_budget, s, [p], rank_method=True)
 
     # Initialize the rw with the corresponding initial state. 
     state = load_tanner_graph(path_to_initial_codes+textfiles[C])
@@ -47,41 +48,40 @@ if __name__ == '__main__':
         stat = cost_fn(state)
         value = stat['mean'][0]
         std = stat['std'][0]
-        x_hist = stat['x_his_erased_cols'][0]
-        z_hist = stat['z_his_erased_cols'][0]
         
         states.append(parse_edgelist(state))
         values.append(value)
 
         stds.append(std)
-
-        x_hists.append(x_hist)
-        z_hists.append(z_hist)
+        record_type.append(l) # 0 for RW, 1 for neighborhood exploration
 
         # Neighborhood exploration
-        # for n in tqdm(range(N-1)):
-        #     neighbor = generate_neighbor(state)
-        #     stat = cost_fn(neighbor)
-        #     value = stat['mean'][0]
-        #     std = stat['std'][0]
+        for n in tqdm(range(N-1)):
+            neighbor = generate_neighbor(state)
+            stat = cost_fn(neighbor)
+            value = stat['mean'][0]
+            std = stat['std'][0]
         
-        #     states.append(parse_edgelist(neighbor))
-        #     values.append(value)
-        #     stds.append(std)
+            states.append(parse_edgelist(neighbor))
+            values.append(value)
+            stds.append(std)
+            record_type.append(l*1000+n) # 1 for neighborhood exploration
 
     # Exploration finished: store results in hdf5 file
     states = np.row_stack(states, dtype=np.uint8)
     values = np.row_stack(values, dtype=np.float64)
     stds = np.row_stack(stds, dtype=np.float64)
-    x_hists = np.array(x_hists, dtype=np.uint8)
-    z_hists = np.array(z_hists, dtype=np.uint8)
+    record_type = np.row_stack(record_type, dtype=np.int32)
+    # x_hists = np.array(x_hists, dtype=np.uint8)
+    # z_hists = np.array(z_hists, dtype=np.uint8)
     
-    with h5py.File("exploration_hist.hdf5", "a") as f: 
+    with h5py.File("exploration_log_plot_data.hdf5", "a") as f: 
         grp = f.require_group(codes[C])
         grp.attrs['MC_budget'] = MC_budget
         grp.attrs['p'] = p
         grp.create_dataset("states", data=states)
         grp.create_dataset("values", data=values)
         grp.create_dataset("stds", data=stds)
-        grp.create_dataset("x_hists", data=x_hists)
-        grp.create_dataset("z_hists", data=z_hists)
+        grp.create_dataset("record_type", data=record_type)
+        # grp.create_dataset("x_hists", data=x_hists)
+        # grp.create_dataset("z_hists", data=z_hists)

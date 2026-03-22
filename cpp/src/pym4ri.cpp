@@ -377,64 +377,40 @@ inline void MC_erasure_plog_rank_only_X(int num_trials, std::vector<double> &p_v
     mzd_free_window(erasure_window), mzd_free(canvas), mzd_free(HxT);
 }
 
-inline void MC_erasure_plog_eta_gamma(int num_trials, std::vector<double> &p_vals,
-                                      mzd_t *Hx, mzd_t *Hz, mzp_t *select_erased_cols, PyArrayObject *means, PyArrayObject *stds, PyArrayObject *x_his_erased_cols, PyArrayObject *z_his_erased_cols)
-{
+inline void MC_erasure_plog_eta_gamma(int num_trials, std::vector<double> &p_vals, 
+mzd_t *Hx, mzd_t *Hz, mzp_t *select_erased_cols, PyArrayObject *means, PyArrayObject *stds) {
     // Preallocate space to hold the submatrices or copies of Hx/Hz
     mzd_t *canvas = mzd_init(Hx->nrows, Hx->ncols);
-
+    
     // Precompute eta(Hx), eta(Hz)
-    mzd_copy(canvas, Hx);
-    mzd_t *eta_Hx = gen2chk(canvas);
-    mzd_copy(canvas, Hz);
-    mzd_t *eta_Hz = gen2chk(canvas);
+    mzd_copy(canvas, Hx); mzd_t *eta_Hx = gen2chk(canvas);
+    mzd_copy(canvas, Hz); mzd_t *eta_Hz = gen2chk(canvas);
     mzd_t *eta_canvas = mzd_init(MAX(eta_Hx->nrows, eta_Hz->nrows), MAX(eta_Hx->ncols, eta_Hz->ncols));
-
+    
     // Loop over all p_values and do MC simulation
-    for (std::vector<double>::size_type idx = 0; idx < p_vals.size(); idx++)
-    {
-        double p = p_vals[idx];
-        int failures = 0;
-        // Clean z_his_erased_cols and x_his_erased_cols for this p value
-        for (int j = 0; j < select_erased_cols->length; j++)
-            *(int *)PyArray_GETPTR2(x_his_erased_cols, idx, j) = 0;
-
-        for (int j = 0; j < select_erased_cols->length; j++)
-            *(int *)PyArray_GETPTR2(z_his_erased_cols, idx, j) = 0;
-
-        for (int t = 0; t < num_trials; t++)
-        {
+    for(std::vector<double>::size_type idx = 0; idx < p_vals.size(); idx++){
+        double p = p_vals[idx]; int failures = 0;
+        for(int t = 0; t < num_trials; t++){            
             // Sample erasure
             int e_weight = sample_erasure(p, select_erased_cols);
-
+            
             // Check for the existence of a X type logical error within the erasure
-            if (logical_error_within_erasure(eta_Hx, Hz, eta_canvas, canvas, select_erased_cols, e_weight))
-            {
+            if(logical_error_within_erasure(eta_Hx, Hz, eta_canvas, canvas, select_erased_cols, e_weight)) {
                 failures++;
-                // Record erased columns for X errors
-                for (int i = 0; i < e_weight; i++)
-                {
-                    *(int *)PyArray_GETPTR2(x_his_erased_cols, idx, select_erased_cols->values[i]) += 1;
-                }
+                continue;
             }
+
             // Check for the existence of a Z type logical error within the erasure
-            if (logical_error_within_erasure(eta_Hz, Hx, eta_canvas, canvas, select_erased_cols, e_weight))
-            {
+            if(logical_error_within_erasure(eta_Hz, Hx, eta_canvas, canvas, select_erased_cols, e_weight)) 
                 failures++;
-                // Record erased columns for Z errors
-                for (int i = 0; i < e_weight; i++)
-                {
-                    *(int *)PyArray_GETPTR2(z_his_erased_cols, idx, select_erased_cols->values[i]) += 1;
-                }
-            }
         }
         // Estimate failure rate and estimator variance
         long long M = num_trials, m = failures;
-        *(double *)PyArray_GETPTR1(means, idx) = (double)m / M;
-        *(double *)PyArray_GETPTR1(stds, idx) = sqrt((double)(m * (M - m)) / (M * (M - 1)));
+        *(double *)PyArray_GETPTR1(means, idx) = (double) m / M;
+        *(double *)PyArray_GETPTR1(stds, idx) = sqrt( (double) (m*(M - m)) / (M*(M - 1)) );
     }
     // Cleanup
-    mzd_free(canvas), mzd_free(eta_canvas), mzd_free(eta_Hx), mzd_free(eta_Hz);
+    mzd_free(canvas), mzd_free(eta_canvas), mzd_free(eta_Hx), mzd_free(eta_Hz); 
 }
 
 inline void MC_erasure_plog_eta_gamma_only_X(int num_trials, std::vector<double> &p_vals,
@@ -701,75 +677,57 @@ static PyObject *gf2_linsolve(PyObject *Py_UNUSED(self), PyObject *args)
     return x_obj;
 }
 
-static PyObject *MC_erasure_plog(PyObject *Py_UNUSED(self), PyObject *args)
-{
+static PyObject *MC_erasure_plog(PyObject *Py_UNUSED(self), PyObject *args) {
     // Parse all arguments to C/C++ data structures
     std::pair<int, int> shape;
     std::vector<std::pair<int, int>> edges;
     int num_trials;
     std::vector<double> p_vals;
     int rank_method, only_X;
-    if (!PyArg_ParseTuple(args, "(ii)O&iO&pp", &(shape.first), &(shape.second),
-                          parse_edgelist, (void *)&edges, &num_trials,
-                          parse_list, (void *)&p_vals,
-                          &rank_method, &only_X))
-        return NULL;
-
+    if (!PyArg_ParseTuple(args, "(ii)O&iO&pp", &(shape.first), &(shape.second), 
+                        parse_edgelist, (void *)&edges, &num_trials, 
+                        parse_list, (void *)&p_vals, 
+                        &rank_method, &only_X)) return NULL;
+    
     // Prepare np.arrays to be returned
-    npy_intp dims[1] = {(npy_intp)p_vals.size()};
-
-    PyArrayObject *means = (PyArrayObject *)PyArray_SimpleNew(1, dims, NPY_DOUBLE);
-    PyArrayObject *stds = (PyArrayObject *)PyArray_SimpleNew(1, dims, NPY_DOUBLE);
-    PyArrayObject *rank_stats = (PyArrayObject *)PyArray_SimpleNew(1, dims, NPY_DOUBLE);
-
+    npy_intp dims[1] = {(npy_intp) p_vals.size()};
+    PyArrayObject *means = (PyArrayObject *) PyArray_SimpleNew(1, dims, NPY_DOUBLE);
+    PyArrayObject *stds = (PyArrayObject *) PyArray_SimpleNew(1, dims, NPY_DOUBLE);
+    PyArrayObject *rank_stats = (PyArrayObject *) PyArray_SimpleNew(1, dims, NPY_DOUBLE);
+    
     // Construct Hx = [Im x H'| H x In] and Hz = [H'x Im | In x H]
     auto &[m, n] = shape;
-    rci_t num_checks = m * n, num_qubits = m * m + n * n;
+    rci_t num_checks = m*n, num_qubits = m*m + n*n;
     mzd_t *Hx = mzd_init(num_checks, num_qubits), *Hz = mzd_init(num_checks, num_qubits);
     build_HxHz_from_edges(Hx, Hz, shape, edges);
 
     // Prepare column permutation to select erased columns
-    mzp_t *select_erased_cols = mzp_init(num_qubits);
-
-    // Prepare 2D np.arrays to hold the histogram of erased columns for X and Z type errors (for debugging purposes)
-    npy_intp dims_2d[2] = {(int)p_vals.size(), (int)num_qubits};
-
-    PyArrayObject *x_his_erased_cols = (PyArrayObject *)PyArray_SimpleNew(2, dims_2d, NPY_INT32);
-    PyArrayObject *z_his_erased_cols = (PyArrayObject *)PyArray_SimpleNew(2, dims_2d, NPY_INT32);
+    mzp_t *select_erased_cols = mzp_init(num_qubits);        
 
     // Run Monte Carlo estimation of the logical error rate for the erasure channel
-    if (rank_method)
-    {
-        // std::cout << "Running rank-based Monte Carlo simulation..." << std::endl;
-        only_X ? MC_erasure_plog_rank_only_X(num_trials, p_vals, Hx, select_erased_cols, means, stds, rank_stats)
-               : MC_erasure_plog_rank(num_trials, p_vals, Hx, Hz, select_erased_cols, means, stds, rank_stats);
-    }
+    if(rank_method)
+        only_X ? MC_erasure_plog_rank_only_X(num_trials, p_vals, Hx, select_erased_cols, means, stds, rank_stats) :
+                 MC_erasure_plog_rank(num_trials, p_vals, Hx, Hz, select_erased_cols, means, stds, rank_stats); 
     else
-    {
-        // std::cout << "Running eta-gamma Monte Carlo simulation..." << std::endl;
-        only_X ? MC_erasure_plog_eta_gamma_only_X(num_trials, p_vals, Hx, Hz, select_erased_cols, means, stds)
-               : MC_erasure_plog_eta_gamma(num_trials, p_vals, Hx, Hz, select_erased_cols, means, stds, x_his_erased_cols, z_his_erased_cols);
-    }
+        only_X ? MC_erasure_plog_eta_gamma_only_X(num_trials, p_vals, Hx, Hz, select_erased_cols, means, stds) :
+                 MC_erasure_plog_eta_gamma(num_trials, p_vals, Hx, Hz, select_erased_cols, means, stds); 
 
     // Cleanup
-    mzd_free(Hx), mzd_free(Hz), mzp_free(select_erased_cols);
+    mzd_free(Hx), mzd_free(Hz), mzp_free(select_erased_cols); 
 
     // Wrap results in a dict
-    PyObject *result_dict;
-    Py_INCREF(means), Py_INCREF(stds), Py_INCREF(x_his_erased_cols), Py_INCREF(z_his_erased_cols);
-    if (rank_method)
-    {
+    PyObject* result_dict;
+    Py_INCREF(means), Py_INCREF(stds);
+    if(rank_method) {
         Py_INCREF(rank_stats);
-        result_dict = Py_BuildValue("{s:O, s:O, s:O, s:O, s:O}", "mean", means, "std", stds, "rank_stats", rank_stats, "x_his_erased_cols", x_his_erased_cols, "z_his_erased_cols", z_his_erased_cols);
+        result_dict = Py_BuildValue("{s:O, s:O, s:O}", "mean", means, "std", stds, "rank_stats", rank_stats);
         Py_DECREF(rank_stats);
+    } else {
+        result_dict = Py_BuildValue("{s:O, s:O}", "mean", means, "std", stds);
     }
-    else
-    {
-        result_dict = Py_BuildValue("{s:O, s:O, s:O, s:O}", "mean", means, "std", stds, "x_his_erased_cols", x_his_erased_cols, "z_his_erased_cols", z_his_erased_cols);
-    }
-    Py_DECREF(means), Py_DECREF(stds), Py_DECREF(x_his_erased_cols), Py_DECREF(z_his_erased_cols);
+    Py_DECREF(means), Py_DECREF(stds);
 
-    return result_dict;
+    return result_dict;    
 }
 
 /**
